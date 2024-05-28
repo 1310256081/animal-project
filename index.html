@@ -105,7 +105,7 @@
         // 将标记点添加到地图上
         let btn = document.querySelector('.addbtn')
         btn.addEventListener('click', () => {
-            clearMarker()
+            map.remove(markers)
             markerData.forEach(item => {
                 let marker = new AMap.Marker({
                     position: item,
@@ -123,7 +123,7 @@
 
                 marker.on('click', function () {
                     // 在点击事件的处理函数中，缩放并定位到标记点
-                    console.log(marker.getPosition())
+                    
                     walking(marker.getPosition())
                     // map.setZoomAndCenter(18, marker.getPosition());
 
@@ -157,6 +157,7 @@
                         }
                     });
         }
+
         function getPosition() {
             //获取定位信息
             var options = {
@@ -179,53 +180,44 @@
                     'fillOpacity': 0.25
                 }
             }
-           
 
-            
             AMap.plugin(["AMap.Geolocation"], function () {
                 var geolocation = new AMap.Geolocation(options);
                 map.addControl(geolocation);
-                geolocation.getCurrentPosition(function (status, result) {
+                geolocation.watchPosition(function (status, result) {
                     if (status == 'complete') {
-                        console.log('定位成功')
                         currentPosition = result.position
+                        console.log('定位成功')
                     } else {
                         console.log('定位失败')
                     }
                 })
             });
         }
-        // 设置定时器，每隔10秒更新一次导航信息
-        setInterval(getPosition, 10000);
+        getPosition()
+        
         // 清除 marker
         let removeBtn = document.querySelector('.removebtn')
-        removeBtn.addEventListener('click', clearMarker)
-        function clearMarker() {
-            // markers.forEach(marker => {
-            //     marker.setMap(null);
-            //     marker = null;
-            // });
-            map.remove(markers);
-            // map.remove(circles)
-        }
+        removeBtn.addEventListener('click', ()=>map.remove(markers))
+        
         //限制地图显示范围
-        function lockMapBounds() {
-            var bounds = new AMap.Bounds(
-                [116.325367, 39.935626],
-                [116.345236, 39.950745]
-            );
-            map.setLimitBounds(bounds);
-            // logMapInfo();
-        }
+        // function lockMapBounds() {
+        //     var bounds = new AMap.Bounds(
+        //         [116.325367, 39.935626],
+        //         [116.345236, 39.950745]
+        //     );
+        //     map.setLimitBounds(bounds);
+        //     // logMapInfo();
+        // }
 
-        //取消地图显示限制
-        function unlockMapBounds() {
-            map.clearLimitBounds();
-            // logMapInfo();
-        }
+        // //取消地图显示限制
+        // function unlockMapBounds() {
+        //     map.clearLimitBounds();
+        //     // logMapInfo();
+        // }
 
-        //启用地图范围限定
-        lockMapBounds();
+        // //启用地图范围限定
+        // lockMapBounds();
         // logMapInfo();
 
         // 这是一个表示矩形区域四个角的经纬度坐标数组
@@ -293,7 +285,7 @@
             [116.343345, 39.942413]
         ];
 
-        map.setMask([path]); // 设置 mask 路径
+        // map.setMask([path]); // 设置 mask 路径
 
 
         // AMap.plugin(['AMap.ControlBar', 'AMap.ToolBar'], function () { //异步加载插件
