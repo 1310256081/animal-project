@@ -84,7 +84,11 @@
             [116.335068, 39.940974],
             [116.332737, 39.943551],
             [106.508201, 29.61656],
-            [106.509601, 29.617535]
+            [106.509601, 29.617535],
+            [106.50594, 29.50291],
+            [106.505252, 29.50269],
+            [106.506686, 29.503919],
+            [106.506559, 29.503718]
         ]
         var imageLayer = new AMap.ImageLayer({
             url: 'https://amappc.cn-hangzhou.oss-pub.aliyun-inc.com/lbs/static/img/dongwuyuan.jpg',
@@ -92,13 +96,13 @@
                 [116.327884, 39.938253],
                 [116.342937, 39.946544]
             ),
-            zooms: [10, 19],
+            zooms: [17, 19],
             // opacity: 0.5
         });
 
         var map = new AMap.Map('container', {
-            center: [116.33679962158203, 39.9420051574707],
-            zooms: [10, 19],
+            center: [106.505799, 29.504023],
+            zooms: [17, 19],
             layers: [
                 AMap.createDefaultLayer(),
                 imageLayer,
@@ -133,7 +137,7 @@
                 marker.on('click', function () {
                     // 在点击事件的处理函数中，缩放并定位到标记点
 
-                    walking(marker.getPosition())
+                    startWalking(marker.getPosition())
                     // map.setZoomAndCenter(18, marker.getPosition());
 
 
@@ -148,25 +152,58 @@
         })
 
         var currentPosition = null
+        let walking = null
+        
         //步行路线规划导航
-        function walking(endPosition) {
+        function startWalking(endPosition) {
+            if (walking) {
+                walking.clear()
+                walking = null
+            }
             //步行导航
-            let walking = new AMap.Walking({
+            walking = new AMap.Walking({
                 map: map,
                 panel: "panel"
             });
             //根据起终点坐标规划步行路线
-            walking.search(currentPosition, endPosition, function (status, result) {
+            //  walking.search(currentPosition, endPosition, function (status, result) {
+            walking.search([106.505799, 29.504023], endPosition, function (status, result) {
                 // result即是对应的步行路线数据信息，相关数据结构文档请参考  https://lbs.amap.com/api/javascript-api/reference/route-search#m_WalkingResult
                 if (status === 'complete') {
                     console.log('绘制步行路线完成')
-
+                    console.log(result)
+                    let path = result.routes[0].steps.map(step => step.path).flat();
+                    mockMove(path)
                 } else {
                     console.error('步行路线数据查询失败' + result)
                 }
             });
         }
-
+        //模拟导航
+        let animationMarker = null
+        function mockMove(path){
+                if(animationMarker){
+                    map.remove(animationMarker)
+                }
+            AMap.plugin('AMap.MoveAnimation', function(){
+                animationMarker = new AMap.Marker({
+                        map: map,
+                        position: [116.478935, 39.997761],
+                        // icon: "https://a.amap.com/jsapi_demos/static/resource/img/user.png",
+                        // offset: new AMap.Pixel(-13, -26),
+                    });
+                    animationMarker.on('moving', function (e) {
+                        // passedPolyline.setPath(e.passedPath);
+                        // map.setCenter(e.target.getPosition(), true)
+                    });
+                    animationMarker.moveAlong(path, {
+                        // 每一段的时长
+                        duration: 1000,//可根据实际采集时间间隔设置
+                        // JSAPI2.0 是否延道路自动设置角度在 moveAlong 里设置
+                        autoRotation: true,
+                    });
+            })
+        }
         function getPosition() {
             //获取定位信息
             var options = {
@@ -187,7 +224,8 @@
                     'strokeWeight': 1,
                     'fillColor': '#02B0FF',
                     'fillOpacity': 0.25
-                }
+                },
+                panToLocation: false
             }
 
             AMap.plugin(["AMap.Geolocation"], function () {
