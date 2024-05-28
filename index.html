@@ -14,14 +14,17 @@
     <script src="https://webapi.amap.com/maps?v=2.0&key=c3dd92f447429606c242fd5fe4f561c3&plugin=AMap.Walking"></script>
     <script type="text/javascript" src="https://cache.amap.com/lbs/static/addToolbar.js"></script>
     <style>
-        #container {
+        /* #container {
             margin: auto;
             padding: 0;
             width: 50vw;
             height: 50vh;
-            /* translate中的%百分比相对的是自身的 也就是向左向上走自身的%50来实现居中效果 */
             transform: translate(0, 50%);
 
+        } */
+        #container {
+            width: 100%;
+            height: 100vh;
         }
 
         .btns {
@@ -121,7 +124,7 @@
                 marker.on('click', function () {
                     // 在点击事件的处理函数中，缩放并定位到标记点
                     console.log(marker.getPosition())
-                    getPosition(marker.getPosition())
+                    walking(marker.getPosition())
                     // map.setZoomAndCenter(18, marker.getPosition());
 
 
@@ -135,8 +138,26 @@
             });
         })
 
+        var currentPosition = null
+        //步行路线规划导航
+        function walking(endPosition){
+             //步行导航
+            let walking = new AMap.Walking({
+                map: map,
+                panel: "panel"
+            });
+            //根据起终点坐标规划步行路线
+            walking.search(currentPosition, endPosition, function (status, result) {
+                        // result即是对应的步行路线数据信息，相关数据结构文档请参考  https://lbs.amap.com/api/javascript-api/reference/route-search#m_WalkingResult
+                        if (status === 'complete') {
+                            console.log('绘制步行路线完成')
 
-        function getPosition(endPosition) {
+                        } else {
+                            console.error('步行路线数据查询失败' + result)
+                        }
+                    });
+        }
+        function getPosition() {
             //获取定位信息
             var options = {
                 'showButton': true,//是否显示定位按钮
@@ -158,39 +179,24 @@
                     'fillOpacity': 0.25
                 }
             }
-            //步行导航
-            let walking = new AMap.Walking({
-                map: map,
-                panel: "panel"
-            });
-            //根据起终点坐标规划步行路线
+           
 
-
+            
             AMap.plugin(["AMap.Geolocation"], function () {
                 var geolocation = new AMap.Geolocation(options);
                 map.addControl(geolocation);
                 geolocation.getCurrentPosition(function (status, result) {
-                    walking.search(result.position, endPosition, function (status, result) {
-                        // result即是对应的步行路线数据信息，相关数据结构文档请参考  https://lbs.amap.com/api/javascript-api/reference/route-search#m_WalkingResult
-                        if (status === 'complete') {
-                            console.log('绘制步行路线完成')
-
-                        } else {
-                            console.error('步行路线数据查询失败' + result)
-                        }
-                    });
-                    // console.log(result,status);
-                    // return
-                    // if (status === 'complete') {
-                    //     var startLngLat = result.position;
-                    //     var endLngLat = new AMap.LngLat(endLng, endLat);
-                    //     walking.search(startLngLat, endLngLat);
-                    // }
+                    if (status == 'complete') {
+                        console.log('定位成功')
+                        currentPosition = result.position
+                    } else {
+                        console.log('定位失败')
+                    }
                 })
             });
         }
         // 设置定时器，每隔10秒更新一次导航信息
-        setInterval(updateNavigation, 10000);
+        setInterval(getPosition, 10000);
         // 清除 marker
         let removeBtn = document.querySelector('.removebtn')
         removeBtn.addEventListener('click', clearMarker)
