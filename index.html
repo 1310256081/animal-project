@@ -250,7 +250,8 @@
                     console.log('绘制步行路线完成')
                     movePath = parseRouteToPath(result.routes[0])
                     let steps = result.routes[0].steps
-                    document.querySelector('.distance').innerHTML = `距离终点${result.routes[0].distance}米，用时${(result.routes[0].distance / 60).toFixed(0)}分钟`
+                    console.log(steps)
+                    document.querySelector('.distance').innerHTML = `距离终点${result.routes[0].distance}米，预计用时${(result.routes[0].distance / 60).toFixed(0)}分钟`
                     document.querySelector('#panel').style.display = 'block'
                     // mockMove(movePath)
                     mockMove(movePath,steps)
