@@ -27,24 +27,16 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
+            
         }
 
         #container {
             width: 100%;
             height: 100vh;
+            position: relative;
         }
 
-        #panel {
-            position: fixed;
-            background-color: white;
-            max-height: 90%;
-            overflow-y: auto;
-            top: 10px;
-            right: 10px;
-            width: 280px;
-            z-index: 888;
-        }
-
+/* 
         #panel .amap-call {
             background-color: #009cf9;
             border-top-left-radius: 4px;
@@ -55,7 +47,7 @@
             border-bottom-left-radius: 4px;
             border-bottom-right-radius: 4px;
             overflow: hidden;
-        }
+        } */
 
         .btns {
             position: absolute;
@@ -63,16 +55,37 @@
             bottom: 20px;
             display: flex;
             z-index: 9999;
+            display: flex;
+            flex-direction: column;
         }
 
         .btn {
             text-align: center;
-            padding: 20px;
+            padding: 10px;
             background-color: aqua;
             border-radius: 10px;
             cursor: pointer;
             margin-right: 20px;
             color: red;
+            margin-bottom: 10px;
+        }
+        #panel{
+            box-sizing: border-box;
+            position: fixed;
+            background-color: white;
+            max-height: 90%;
+            overflow-y: auto;
+            top: 10px;
+            right: 10px;
+            left: 10px;
+            z-index: 888;
+            padding: 10px 10px;
+            border-radius: 20px;
+            display: none;
+        }
+        h4{
+            padding-bottom: 10px;
+            margin: 0;
         }
         #panel2 {
             position: fixed;
@@ -88,6 +101,14 @@
             padding-bottom: 10px;
             display: none;
         }
+
+        h3 {
+            text-align: center;
+        }
+
+        .mockbtn {
+            margin: auto;
+        }
     </style>
 </head>
 
@@ -95,13 +116,17 @@
     <div id="container">
         <div class="btns">
             <div class="btn claerMap">清除所有图层</div>
-            <div class="btn addbtn">添加标记点</div>
+            <!-- <div class="btn addbtn">添加标记点</div> -->
             <div class="btn selectLine">标记推荐路线</div>
+            <div class="btn clearMarker">清除上一次标记</div>
             <div class="btn selectEnd">完成标记</div>
             <div class="btn mockSellLine">模拟导航推荐路线</div>
-            <div class="btn clearMarker">清除上一次标记</div>
+
         </div>
-        <div id="panel"></div>
+        <div id="panel">
+            <h4 class="distance"></h4>
+            <div class="instruction">111</div>
+        </div>
         <div id="panel2">
             <h3>这是一个标识点信息窗口</h3>
             <div class="btn mockbtn">模拟导航</div>
@@ -112,15 +137,17 @@
     <script>
 
         var markerData = [
-            [106.503609,29.504015],
-            [106.503745,29.503897],
-            [106.508003,29.501885]
+            [106.503609, 29.504015],
+            [106.503705, 29.505636],
+            [106.508003, 29.501885],
+            [106.505677, 29.50525],
+            [106.501791, 29.505169]
         ]
         var imageLayer = new AMap.ImageLayer({
             url: './images/animal.png',
             bounds: new AMap.Bounds(
-                 [106.498015,29.499104],
-                [106.513916,29.510025]
+                [106.498015, 29.499104],
+                [106.513916, 29.510025]
             ),
             zooms: [16.5, 18],
             opacity: 1
@@ -128,46 +155,60 @@
         var imageLayer2 = new AMap.ImageLayer({
             url: './images/animal.png',
             bounds: new AMap.Bounds(
-                [106.498015,29.499104],
-                [106.513916,29.510025]
+                [106.498015, 29.499104],
+                [106.513916, 29.510025]
             ),
             zooms: [18, 19],
             opacity: 1
         });
         var map = new AMap.Map('container', {
             center: [106.505799, 29.504023],
-            zooms: [16.5, 19],
-            layers: [
-                AMap.createDefaultLayer(),
-                imageLayer,
-                imageLayer2
-            ],
+            zoom: 16,
+            zooms: [17, 19],
+            // layers: [
+            //     AMap.createDefaultLayer(),
+            //     imageLayer,
+            //     imageLayer2
+            // ],
+            layers: [AMap.createDefaultLayer()],
             viewMode: '2D',
             // mapStyle:'amap://styles/fresh',
             // pitch: 40,
             features: []
         });
 
+        var nameFormat = "{x}_{y}";
+        var ext = ".png";
+        // 添加叠加图层
+        var tilerLayer = new AMap.TileLayer({
+            zIndex: 10,
+            getTileUrl: function (x, y, z) {
+                var name = nameFormat
+                    .replace("{x}", x)
+                    .replace("{y}", y)
+                    .replace("{z}", z)
+                    ;
+                return 'images/tiles/' + z + '/' + name + ext;
+            }
+        }).setMap(map);
 
         // 获取定位
         // getPosition()
 
         //保存创建的marker
         let markers = []
-       
+
         //当前点击标识点坐标
         let endPosition
         // 将标记点添加到地图上
-        let btn = document.querySelector('.addbtn')
-        btn.addEventListener('click', () => {
+        function addMarkers() {
             if (markers.length) {
                 map.remove(markers)
                 markers = []
                 return
             }
-            clearAllLayers()
+            // clearAllLayers()
             markerData.forEach(item => {
-
                 let marker = new AMap.Marker({
                     position: item,
                 });
@@ -183,7 +224,12 @@
                 markers.push(marker)
             });
             map.setFitView()
-        })
+        }
+        addMarkers()
+        // let btn = document.querySelector('.addbtn')
+        // btn.addEventListener('click', () => {
+
+        // })
 
         var currentPosition = null
         //实例化步行导航
@@ -198,13 +244,16 @@
 
             //根据起终点坐标规划步行路线
             //  walking.search(currentPosition, endPosition, function (status, result) {
-            walking.search(map.getCenter(), endPosition, function (status, result) {
+            walking.search([106.505799, 29.504023], endPosition, function (status, result) {
                 // result即是对应的步行路线数据信息，相关数据结构文档请参考  https://lbs.amap.com/api/javascript-api/reference/route-search#m_WalkingResult
                 if (status === 'complete') {
                     console.log('绘制步行路线完成')
                     movePath = parseRouteToPath(result.routes[0])
+                    let steps = result.routes[0].steps
+                    document.querySelector('.distance').innerHTML = `距离终点${result.routes[0].distance}米，用时${(result.routes[0].distance / 60).toFixed(0)}分钟`
+                    document.querySelector('#panel').style.display = 'block'
                     // mockMove(movePath)
-                     mockMove(movePath)
+                    mockMove(movePath,steps)
                 } else {
                     console.error('步行路线数据查询失败' + result)
                 }
@@ -212,13 +261,13 @@
         }
         //模拟导航
         let animationMarker = null
-        function mockMove(path) {
+        let isMoving = false
+        function mockMove(path,steps) {
             if (animationMarker) {
                 animationMarker.stopMove();
                 animationMarker.setMap(null);
                 animationMarker = null;
             }
-
 
             AMap.plugin('AMap.MoveAnimation', function () {
                 // 创建 AMap.Icon 实例
@@ -237,8 +286,17 @@
                 });
                 animationMarker.on('moving', function (e) {
                     // passedPolyline.setPath(e.passedPath);
-                    map.setCenter(e.target.getPosition(), true)
+                    // map.setCenter(e.target.getPosition(), true)
                     // map.setFitView(animationMarker)
+                    isMoving = true
+                    if (steps) {
+                        
+                        var passedPath = e.passedPath; // 获取 marker 已经经过的路径
+                        var currentStep = getCurrentStep(passedPath, steps);
+                        if (currentStep) {
+                            updatePanel(currentStep); // 更新 panel 为当前路段的信息
+                        }
+                    }
 
                 });
 
@@ -248,8 +306,50 @@
                     // JSAPI2.0 是否延道路自动设置角度在 moveAlong 里设置
                     autoRotation: true,
                 });
+                animationMarker.on('movealong', function (e) {
+                    if (confirm("导航结束，是否退出导航？")) {
+                        // 如果用户点击了“确定”，则执行这里的代码
+                        console.log("用户选择了确定。");
+                        clearAllLayers()
+
+                    } else {
+                        // 如果用户点击了“取消”，则执行这里的代码
+                        console.log("用户选择了取消。");
+                    }
+                    isMoving = false
+                    document.querySelector('#panel').style.display = 'none'
+                });
 
             })
+        }
+
+        // 获取当前路段的函数
+        function getCurrentStep(passedPath, steps) {
+            // 遍历所有步骤
+            for (var i = 0; i < steps.length; i++) {
+                // 获取步骤的路径
+                var stepPath = steps[i].path;
+                // 检查 passedPath 中的最后一个点是否在当前步骤的路径中
+                var lastPassedPoint = passedPath[passedPath.length - 1];
+                if (isPointOnPath(lastPassedPoint, stepPath)) {
+                    // 如果在当前步骤的路径中，返回这个步骤
+                    return steps[i];
+                }
+            }
+            // 如果没有找到当前路段，返回 null
+            return null;
+        }
+
+        // 检查点是否在路径上的函数
+        function isPointOnPath(point, path) {
+            // 这里可以使用一些地图服务提供的算法，例如高德地图的 AMap.GeometryUtil.isPointOnLine
+            // 或者自己实现点到线段的最短距离算法，如果距离小于某个阈值，则认为点在路径上
+            return AMap.GeometryUtil.isPointOnLine(point, path);
+        }
+        // 更新 panel 的函数
+        function updatePanel(step) {
+            var panel = document.querySelector('.instruction');
+            panel.innerHTML = step.instruction; // 显示当前路段的指示信息
         }
         //清除路线规划
         function clearAll() {
@@ -307,12 +407,12 @@
         mockbtn.addEventListener('click', () => {
             // if(!currentPosition) return alert('正在获取当前定位')
             // if (!movePath) return alert('请先选择标记点规划路线')
-            if(endPosition){
+            if (endPosition) {
                 document.querySelector('#panel2').style.display = 'none'
-                 startWalking(endPosition)
+                startWalking(endPosition)
             }
-           
-           
+
+
         })
 
         // 限制地图显示范围
@@ -322,82 +422,17 @@
             //     [116.345236, 39.950745]
             // );
             var bounds = new AMap.Bounds(
-                [106.498015,29.499104],
-                [106.513916,29.510025]
-                
+                [106.498015, 29.499104],
+                [106.513916, 29.510025]
+
             );
             map.setLimitBounds(bounds);
-            // logMapInfo();
+
         }
 
         //启用地图范围限定
         lockMapBounds();
-        // logMapInfo();
 
-        // 这是一个表示矩形区域四个角的经纬度坐标数组
-        var path = [
-            [116.327812, 39.942785], // 西南角
-            [116.3279, 39.942792],// 西北角
-            [116.328727, 39.943189], // 东北角
-            [116.328915, 39.943201],  // 东南角
-            [116.328903, 39.943399], // 西南角
-            [116.328934, 39.943472],// 西北角
-            [116.329526, 39.943565], // 东北角
-            [116.329503, 39.943728]
-            [116.330397, 39.943831], // 西南角
-            [116.330513, 39.944013],// 西北角
-            [116.330592, 39.944053], // 东北角
-            [116.331242, 39.944106]
-            [116.331489, 39.944182], // 西南角
-            [116.332053, 39.944252],// 西北角
-            [116.332294, 39.944241], // 东北角
-            [116.332436, 39.944268]
-            [116.333311, 39.944241], // 西南角
-            [116.333311, 39.944241],// 西北角
-            [116.333538, 39.945194], // 东北角
-            [116.335126, 39.945349]
-            [116.335228, 39.944813], // 西南角
-            [116.336278, 39.944877],// 西北角
-            [116.337558, 39.945053], // 东北角
-            [116.33751, 39.945403],
-            [116.338879, 39.94551], // 西南角
-            [116.339707, 39.946312],// 西北角
-            [116.339546, 39.947512], // 东北角
-            [116.340558, 39.947559]
-            [116.3407, 39.946518], // 西南角
-            [116.340686, 39.946344],// 西北角
-            [116.340518, 39.946182], // 东北角
-            [116.340547, 39.946012]
-            [116.341043, 39.946027], // 西南角
-            [116.341053, 39.945805],// 西北角
-            [116.341553, 39.945849], // 东北角
-            [116.342563, 39.945858]
-            [116.34257, 39.943903], // 西南角
-            [116.342513, 39.943248],// 西北角
-            [116.343181, 39.943081], // 东北角
-            [116.343345, 39.942413],
-            [116.343113, 39.942394]
-            [116.343019, 39.941276], // 西南角
-            [116.34269, 39.941176],// 西北角
-            [116.342714, 39.938742], // 东北角
-            [116.335884, 39.938419],
-            [116.33584, 39.93843], // 西南角
-            [116.335734, 39.938801],// 西北角
-            [116.335627, 39.939425], // 东北角
-            [116.335598, 39.939573]
-            [116.334039, 39.939484], // 西南角
-            [116.33081, 39.939503],// 西北角
-            [116.330742, 39.938638], // 东北角
-            [116.330432, 39.938701]
-            [116.330486, 39.939339], // 西南角
-            [116.330147, 39.939952],// 西北角
-            [116.32899, 39.940078], // 东北角
-            [116.328491, 39.940891]
-            [116.327838, 39.942598], // 西南角
-            [116.327707, 39.942747],// 西北角
-            [116.343181, 39.943081], // 东北角
-            [116.343345, 39.942413]
-        ];
 
         // // //两江数字园地图
         // let path2 = [
@@ -433,9 +468,7 @@
         const clearMarker = document.querySelector('.clearMarker')
         const mockSellLine = document.querySelector('.mockSellLine')
         let selectLineArray = []
-        let completeLineArray
         let lineMarkers = []
-        let selectLineMapArray = []
         let isComplete = false
         let isSelectedLine = false
         // 新实例一个walking对象
@@ -473,11 +506,11 @@
             // }
         }
         selectLineDom.addEventListener('click', () => {
-            if(isSelectedLine) return alert('正在标记路线中')
+            if (isSelectedLine) return alert('正在标记路线中')
             isSelectedLine = true
             isComplete = false
             selectLineArray = []
-            completeLineArray = []
+            // completeLineArray = []
             clearAllLayers()
             map.on("click", onMapClick);
             map.setDefaultCursor('pointer')
@@ -497,140 +530,18 @@
         }
         //完成标记
         selectEndDom.addEventListener('click', async () => {
-            if(selectLineArray.length <= 1) return alert('请至少标记两个点')
+            if (selectLineArray.length <= 1) return alert('请至少标记两个点')
             map.off('click', onMapClick)
             map.setDefaultCursor('default')
             isSelectedLine = false
             isComplete = true
-            // if (selectLineArray.length < 2) return alert('请至少选择两个点')
-            // completeLineArray = []
-            //     for (let i = 0; i < selectLineArray.length - 1; i++) {
-            //             await selectWalking.search(selectLineArray[i], selectLineArray[i + 1], function (status, result) {
-            //                 // result即是对应的步行路线数据信息，相关数据结构文档请参考  https://lbs.amap.com/api/javascript-api/reference/route-search#m_WalkingResult
-            //                 if (status === 'complete') {
-            //                     completeLineArray.push(parseRouteToPath(result.routes[0]))
-            //                 } else {
-            //                     console.error('步行路线数据查询失败' + result)
-            //                 }
-            //             });
-            //         }
+
         })
-        //绘制推荐路线
-        // showLine.addEventListener('click', () => {
-        //     console.log(completeLineArray)
-        //     drawRoute(completeLineArray)
-        // })
 
         //绘制推荐路线
         let changeColorTimer = null
-        function drawRoute(route) {
-            var path = route
-            // path.forEach((item, index) => {
-            //     if (path.length === 1) {
-            //         var startMarker = new AMap.Marker({
-            //             position: item[0],
-            //             icon: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
-            //             map: map,
-            //             anchor: 'bottom-center',
-            //         })
-            //         var endMarker = new AMap.Marker({
-            //             position: item[item.length - 1],
-            //             icon: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
-            //             map: map,
-            //             anchor: 'bottom-center',
-            //         })
-            //         var routeLine = new AMap.Polyline({
-            //             path: item,
-            //             isOutline: true,
-            //             outlineColor: '#ffeeee',
-            //             borderWeight: 2,
-            //             strokeWeight: 5,
-            //             strokeColor: '#0091ff',
-            //             strokeOpacity: 0.9,
-            //             lineJoin: 'round',
-            //             lineCap: 'round',
-            //             showDir: true
-            //         })
+        function drawRoute(path) {
 
-            //         map.add(routeLine);
-            //     } else {
-            //         if (index === 0) {
-            //             var startMarker = new AMap.Marker({
-            //                 position: item[0],
-            //                 icon: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
-            //                 map: map,
-            //                 anchor: 'bottom-center',
-            //             })
-
-            //             var routeLine = new AMap.Polyline({
-            //                 path: item,
-            //                 isOutline: true,
-            //                 outlineColor: '#ffeeee',
-            //                 borderWeight: 2,
-            //                 strokeWeight: 5,
-            //                 strokeColor: '#0091ff',
-            //                 strokeOpacity: 0.9,
-            //                 lineJoin: 'round',
-            //                 lineCap: 'round',
-            //                 showDir: true
-            //             })
-
-            //             map.add(routeLine);
-            //         } else if (index === (path.length - 1)) {
-            //             var startMarker = new AMap.Marker({
-            //                 position: item[0],
-            //                 map: map,
-            //                 anchor: 'bottom-center',
-            //             })
-            //             var endMarker = new AMap.Marker({
-            //                 position: item[item.length - 1],
-            //                 icon: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
-            //                 map: map,
-            //                 anchor: 'bottom-center',
-            //             })
-            //             var routeLine = new AMap.Polyline({
-            //                 path: item,
-            //                 isOutline: true,
-            //                 outlineColor: '#ffeeee',
-            //                 borderWeight: 2,
-            //                 strokeWeight: 5,
-            //                 strokeColor: '#0091ff',
-            //                 strokeOpacity: 0.9,
-            //                 lineJoin: 'round',
-            //                 lineCap: 'round',
-            //                 showDir: true
-            //             })
-
-            //             map.add(routeLine);
-            //         } else {
-            //             var startMarker = new AMap.Marker({
-            //                 position: item[0],
-            //                 map: map,
-            //                 anchor: 'bottom-center',
-            //             })
-            //             // var endMarker = new AMap.Marker({
-            //             //     position: item[item.length - 1],
-            //             //     icon: 'https://webapi.amap.com/theme/v1.3/markers/n/end.png',
-            //             //     map: map,
-            //             //     anchor: 'bottom-center',
-            //             // })
-            //             var routeLine = new AMap.Polyline({
-            //                 path: item,
-            //                 isOutline: true,
-            //                 outlineColor: '#ffeeee',
-            //                 borderWeight: 2,
-            //                 strokeWeight: 5,
-            //                 strokeColor: '#0091ff',
-            //                 strokeOpacity: 0.9,
-            //                 lineJoin: 'round',
-            //                 lineCap: 'round',
-            //                 showDir: true
-            //             })
-
-            //             map.add(routeLine);
-            //         }
-            //     }
-            // })
             var startMarker = new AMap.Marker({
                 position: path[0],
                 icon: 'https://webapi.amap.com/theme/v1.3/markers/n/start.png',
@@ -678,7 +589,6 @@
             }, 1000); // 每隔1秒更改一次颜色
             lineMarkers = [...lineMarkers, routeLine, endMarker]
 
-            // selectLineMapArray = [...selectLineMapArray,routeLine]
             map.add(routeLine);
 
             // 调整视野达到最佳显示区域
@@ -686,16 +596,20 @@
         }
         //模拟导航推荐路线
         mockSellLine.addEventListener('click', () => {
-            if(!isComplete || isSelectedLine) return alert('正在标记路线中或请点击完成标记')
+            if (selectLineArray?.length <= 0) return alert('请先标记推荐路线')
+            if (!isComplete || isSelectedLine) return alert('正在标记路线中或请点击完成标记')
+            if (isMoving) return alert('正在模拟导航中')
+            // clearAll()
             mockMove(selectLineArray)
         })
         //清除上一次标记
         clearMarker.addEventListener('click', () => {
+            if (selectLineArray?.length <= 0) return
+            if (isComplete) return alert('路线标记已完成，操作无效')
             map.remove([lineMarkers[lineMarkers.length - 1], lineMarkers[lineMarkers.length - 2]])
-            //  map.remove(selectLineMapArray[selectLineMapArray.length-1])
             lineMarkers.splice(-2, 2)
             selectLineArray.splice(-1, 1)
-            //  selectLineMapArray.slice(-1, 1)
+
             if (selectLineArray.length > 1) {
                 var endMarker = new AMap.Marker({
                     position: selectLineArray[selectLineArray.length - 1],
@@ -708,6 +622,13 @@
             }
 
         })
+        //初始化推荐路线
+        function initSelectLine() {
+            selectLineArray = []
+            lineMarkers = []
+            isComplete = false
+            isSelectedLine = false
+        }
         //清除所有覆盖物
         const claerMap = document.querySelector('.claerMap')
         claerMap.addEventListener('click', () => {
@@ -728,7 +649,13 @@
                 animationMarker.setMap(null);
                 animationMarker = null;
             }
+            markers = []
+            initSelectLine()
+            map.off('click', onMapClick)
+            map.setDefaultCursor('default')
             document.querySelector('#panel2').style.display = 'none'
+
+            addMarkers()
         }
 
     </script>
