@@ -1,0 +1,120 @@
+﻿<!doctype html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <title>高德地图</title>
+    <link rel="stylesheet" href="http://cache.amap.com/lbs/static/main1119.css" />
+    <link rel="stylesheet" href="http://cache.amap.com/lbs/static/main.css?v=1.0?v=1.0" />
+    <script type="text/javascript" src="http://webapi.amap.com/maps?v=1.4.2&key=c3dd92f447429606c242fd5fe4f561c3&plugin=AMap.DistrictSearch,AMap.Scale,AMap.OverView,AMap.ToolBar,AMap.MapType"></script>
+    <style>
+        html, body, #container {
+            width: 100%;
+            height: 100%;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* CARD */
+        .card {
+            display: flex;
+            flex: 1 1 auto;
+            -ms-flex: 1 1 auto;
+            flex-direction: column;
+
+            width: 10rem;
+            min-width: 0;
+            position: fixed;
+            bottom: 1rem;
+            right: 1rem;
+            padding: 0.5rem 0.5rem 0.5rem 1rem;
+
+            background-color: #fff;
+            background-clip: border-box;
+            border-width: 0;
+            border-radius: 1rem;
+
+            font-size: 12px;
+            font-family: Arial;
+            word-wrap: break-word;
+            color: #0288d1;
+            display: block;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <div id="container"></div>
+    <div class="card">
+        <span id="map-zoom">11</span> :
+        <span id="map-center">121.498586,31.239637</span>
+    </div>
+</body>
+</html>
+<script>
+    var showRect = true;
+    var nameFormat = "{x}_{y}";
+    var ext = ".png";
+
+    var map = new AMap.Map('container', {
+        resizeEnable: true,
+        layers: [new AMap.TileLayer()],
+        center: [106.505996, 29.5045775],
+        zoom: 16,
+        expandZoomRange: true,
+        zooms: [16,19],
+        //viewMode: '3D',  // 三维视图
+        pitch: 40
+    });
+    //map.setLayers([new AMap.TileLayer.Satellite()]);
+    map.addControl(new AMap.Scale());
+    map.addControl(new AMap.ToolBar());
+    map.addControl(new AMap.OverView());
+    map.addControl(new AMap.MapType());
+
+    // 添加叠加图层
+    var host = window.location.origin;
+    var tilerLayer = new AMap.TileLayer({
+        zIndex: 10,
+        getTileUrl: function (x, y, z) {
+            var name = nameFormat
+                .replace("{x}", x)
+                .replace("{y}", y)
+                .replace("{z}", z)
+                ;
+            return 'tiles/' + z + '/' + name + ext;
+        }
+    });
+    tilerLayer.setMap(map);
+
+    // 添加矩形
+    if (showRect) {
+        var path1 = [
+            new AMap.LngLat(106.498053, 29.510038),
+            new AMap.LngLat(106.513939, 29.510038),
+            new AMap.LngLat(106.513939, 29.499117),
+            new AMap.LngLat(106.498053, 29.499117),
+            new AMap.LngLat(106.498053, 29.510038)
+        ];
+        var polyline = new AMap.Polyline({
+            path: path1,
+            strokeColor: 'blue',
+            strokeWeight: 3
+        });
+        map.add([polyline]);
+    }
+
+    // 显示地图层级与中心点信息
+    map.on('mapmove', showMapInfo);
+    map.on('zoomend', showMapInfo);
+    function showMapInfo() {
+        var zoom = map.getZoom(); //获取当前地图级别
+        var center = map.getCenter(); //获取当前地图中心位置
+        document.querySelector("#map-zoom").innerText = zoom;
+        document.querySelector("#map-center").innerText = center.lng.toString() + ', ' + center.lat.toString();
+    }
+    showMapInfo();
+
+
+</script>

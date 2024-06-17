@@ -27,7 +27,7 @@
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            
+
         }
 
         #container {
@@ -36,7 +36,7 @@
             position: relative;
         }
 
-/* 
+        /* 
         #panel .amap-call {
             background-color: #009cf9;
             border-top-left-radius: 4px;
@@ -69,7 +69,8 @@
             color: red;
             margin-bottom: 10px;
         }
-        #panel{
+
+        #panel {
             box-sizing: border-box;
             position: fixed;
             background-color: white;
@@ -83,10 +84,12 @@
             border-radius: 20px;
             display: none;
         }
-        h4{
+
+        h4 {
             padding-bottom: 10px;
             margin: 0;
         }
+
         #panel2 {
             position: fixed;
             background-color: white;
@@ -143,28 +146,27 @@
             [106.505677, 29.50525],
             [106.501791, 29.505169]
         ]
-        var imageLayer = new AMap.ImageLayer({
-            url: './images/animal.png',
-            bounds: new AMap.Bounds(
-                [106.498015, 29.499104],
-                [106.513916, 29.510025]
-            ),
-            zooms: [16.5, 18],
-            opacity: 1
-        });
-        var imageLayer2 = new AMap.ImageLayer({
-            url: './images/animal.png',
-            bounds: new AMap.Bounds(
-                [106.498015, 29.499104],
-                [106.513916, 29.510025]
-            ),
-            zooms: [18, 19],
-            opacity: 1
-        });
+        // var imageLayer = new AMap.ImageLayer({
+        //     url: './images/animal.png',
+        //     bounds: new AMap.Bounds(
+        //         [106.498015, 29.499104],
+        //         [106.513916, 29.510025]
+        //     ),
+        //     zooms: [16.5, 18],
+        //     opacity: 1
+        // });
+        // var imageLayer2 = new AMap.ImageLayer({
+        //     url: './images/animal.png',
+        //     bounds: new AMap.Bounds(
+        //         [106.498015, 29.499104],
+        //         [106.513916, 29.510025]
+        //     ),
+        //     zooms: [18, 19],
+        //     opacity: 1
+        // });
         var map = new AMap.Map('container', {
             center: [106.505799, 29.504023],
-            zoom: 16,
-            zooms: [17, 19],
+            zooms: [16, 19],
             // layers: [
             //     AMap.createDefaultLayer(),
             //     imageLayer,
@@ -177,20 +179,17 @@
             features: []
         });
 
-        var nameFormat = "{x}_{y}";
+        // var nameFormat = "{x}_{y}";
         var ext = ".png";
         // 添加叠加图层
         var tilerLayer = new AMap.TileLayer({
             zIndex: 10,
+            // zooms: [16, 19],
             getTileUrl: function (x, y, z) {
-                var name = nameFormat
-                    .replace("{x}", x)
-                    .replace("{y}", y)
-                    .replace("{z}", z)
-                    ;
-                return 'images/tiles/' + z + '/' + name + ext;
+                return 'images/animal/' + z + '/' + x + '/' + y + ext;
             }
         }).setMap(map);
+        
 
         // 获取定位
         // getPosition()
@@ -254,7 +253,7 @@
                     document.querySelector('.distance').innerHTML = `距离终点${result.routes[0].distance}米，预计用时${(result.routes[0].distance / 60).toFixed(0)}分钟`
                     document.querySelector('#panel').style.display = 'block'
                     // mockMove(movePath)
-                    mockMove(movePath,steps)
+                    mockMove(movePath, steps)
                 } else {
                     console.error('步行路线数据查询失败' + result)
                 }
@@ -263,7 +262,7 @@
         //模拟导航
         let animationMarker = null
         let isMoving = false
-        function mockMove(path,steps) {
+        function mockMove(path, steps) {
             if (animationMarker) {
                 animationMarker.stopMove();
                 animationMarker.setMap(null);
@@ -291,7 +290,7 @@
                     // map.setFitView(animationMarker)
                     isMoving = true
                     if (steps) {
-                        
+
                         var passedPath = e.passedPath; // 获取 marker 已经经过的路径
                         var currentStep = getCurrentStep(passedPath, steps);
                         if (currentStep) {
